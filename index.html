@@ -8,6 +8,29 @@
   </head>
   <body>
     <script src="js/three.min.js"></script>
+    <script id="vertexShader" type="x-shader/x-vertex">
+
+uniform float time;
+
+void main()
+{
+    vec3 p = position;
+
+    float l = length(p);
+    p.z = sin(l * 1.2 - time * 5.0) * 0.5;
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+}
+
+    </script>
+    <script id="fragmentShader" type="x-shader/x-fragment">
+
+void main(void)
+{
+    gl_FragColor = vec4(0.5, 0.5, 0.5, 1.0);
+}
+
+    </script>
     <script>
 
 var windowHalfWidth  = window.innerWidth  / 2;
@@ -15,6 +38,8 @@ var windowHalfHeight = window.innerHeight / 2;
 
 var mouseX = 0;
 var mouseY = 0;
+
+var uniforms;
 
 var clock, renderer, scene, camera, geometry, mesh;
 
@@ -27,17 +52,25 @@ function init()
 {
     clock = new THREE.Clock();
 
+    uniforms = {
+        time: { type: "f", value: 0.0 }
+    };
+
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0xffffff);
 
     scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0xffffff, 0.05);
-
     camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 50);
-
     geometry = new THREE.PlaneGeometry(10, 10, 64, 64);
-    var material = new THREE.MeshBasicMaterial({color:0x808080, wireframe:true});
+
+    var material = new THREE.ShaderMaterial({
+        uniforms: uniforms,
+        vertexShader: document.getElementById('vertexShader').textContent,
+        fragmentShader: document.getElementById('fragmentShader').textContent,
+        wireframe: true
+    });
+
     mesh = new THREE.Mesh(geometry, material);
     mesh.rotation.x = Math.PI / 2;
     scene.add(mesh);
@@ -71,21 +104,11 @@ function animate()
 
 function render()
 {
-    var theta = mouseX * Math.PI * -0.5;
-    var phi = mouseY * Math.PI * -0.5;
-
     camera.position.set(0, 0, 15);
     camera.position.applyEuler(new THREE.Euler(-0.4, clock.getElapsedTime() * 0.4, 0, "ZYX"));
     camera.lookAt(scene.position);
 
-    var time = clock.getElapsedTime() * 25;
-    for (var i = 0, il = geometry.vertices.length; i < il; i++)
-    {
-        var t = geometry.vertices[i].length() * 2;
-        geometry.vertices[i].z = Math.sin(t - time * 0.2) * 0.5;
-    }
-    mesh.geometry.verticesNeedUpdate = true;
-
+    uniforms.time.value = clock.getElapsedTime();
     renderer.render(scene, camera);
 }
 
