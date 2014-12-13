@@ -155,7 +155,7 @@ void main()
 
 void main(void)
 {
-    gl_FragColor = vec4(0.5, 0.5, 0.5, 1.0);
+    gl_FragColor = vec4(0.2, 0.2, 0.2, 1.0);
 }
 
     </script>
@@ -199,15 +199,10 @@ function init()
         wireframe: true
     });
 
-    var geometry = new THREE.PlaneBufferGeometry(10, 10, 32, 32);
-
-    for (var y = -1.0; y <= 1.0; y += 0.2)
-    {
-        var mesh = new THREE.Mesh(geometry, material);
-        mesh.position.y = y * 2;
-        mesh.rotation.x = Math.PI / 2;
-        scene.add(mesh);
-    }
+    var geometry = new THREE.PlaneBufferGeometry(30, 30, 64, 64);
+    var mesh = new THREE.Mesh(geometry, material);
+    mesh.rotation.x = Math.PI / 2;
+    scene.add(mesh);
 
     window.addEventListener('resize', onWindowResize, false);
     document.body.appendChild(renderer.domElement);
@@ -241,7 +236,7 @@ function render()
     var time = clock.getElapsedTime();
 
     camera.position.set(0, 0, 10 + Math.sin(time * 0.3) * 5.0);
-    camera.position.applyEuler(new THREE.Euler(-0.4, time * 0.4, 0, "ZYX"));
+    camera.position.applyEuler(new THREE.Euler(Math.sin(time * 0.184) * 0.2 - 0.4, time * 0.4, 0, "ZYX"));
     camera.lookAt(scene.position);
 
     uniforms.time.value = time;
