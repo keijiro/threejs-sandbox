@@ -10,57 +10,41 @@
     <script src="js/three.min.js"></script>
     <script>
 
-
 var windowHalfWidth  = window.innerWidth  / 2;
 var windowHalfHeight = window.innerHeight / 2;
 
 var mouseX = 0;
 var mouseY = 0;
 
-var scene, camera, renderer;
-
-var cubes = [];
-var columnCount = 20;
+var clock, renderer, scene, camera, geometry, mesh;
 
 document.addEventListener('mousemove', onDocumentMouseMove, false);
 
 init();
 animate();
 
-
 function init()
 {
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 100);
-    renderer = new THREE.WebGLRenderer();
+    clock = new THREE.Clock();
 
+    renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0xffffff);
 
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0xffffff, 0.05);
+
+    camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 50);
+
+    geometry = new THREE.PlaneGeometry(10, 10, 64, 64);
+    var material = new THREE.MeshBasicMaterial({color:0x808080, wireframe:true});
+    mesh = new THREE.Mesh(geometry, material);
+    mesh.rotation.x = Math.PI / 2;
+    scene.add(mesh);
+
     window.addEventListener('resize', onWindowResize, false);
-
     document.body.appendChild(renderer.domElement);
-    camera.position.z = 20.0;
-
-    var light = new THREE.HemisphereLight(0xa0f0f0, 0, 1.0);
-    scene.add(light);
-
-    var geometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-    var material = new THREE.MeshLambertMaterial({color:0xffffff});
-
-    for (var i = 0; i < columnCount; i++)
-    {
-        for (var j = 0; j < columnCount; j++)
-        {
-            var cube = new THREE.Mesh(geometry, material);
-            cube.position.x = i - 0.5 * columnCount + 0.5;
-            cube.position.z = j - 0.5 * columnCount + 0.5;
-            scene.add(cube);
-            cubes.push(cube);
-        }
-    }
 }
-
 
 function onWindowResize()
 {
@@ -73,13 +57,11 @@ function onWindowResize()
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-
 function onDocumentMouseMove(event)
 {
     mouseX = (event.clientX / window.innerWidth ) * 2 - 1;
     mouseY = (event.clientY / window.innerHeight) * 2 - 1;
 }
-
 
 function animate()
 {
@@ -87,27 +69,25 @@ function animate()
     render();
 }
 
-
 function render()
 {
     var theta = mouseX * Math.PI * -0.5;
-    var phi = mouseY * Math.PI * 0.5;
+    var phi = mouseY * Math.PI * -0.5;
 
-    camera.position.x = Math.cos(phi) * Math.sin(theta) * 20;
-    camera.position.y = Math.sin(phi) * 20;
-    camera.position.z = Math.cos(phi) * Math.cos(theta) * 20;
+    camera.position.set(0, 0, 15);
+    camera.position.applyEuler(new THREE.Euler(-0.4, clock.getElapsedTime() * 0.4, 0, "ZYX"));
     camera.lookAt(scene.position);
 
-    var time = Date.now() * 0.01;
-    for (var i = 0; i < cubes.length; i++)
+    var time = clock.getElapsedTime() * 25;
+    for (var i = 0, il = geometry.vertices.length; i < il; i++)
     {
-        var cube = cubes[i];
-        var t = cube.position.length();
-        cube.position.y = Math.sin(t + time * 0.2) * 0.5;
+        var t = geometry.vertices[i].length() * 2;
+        geometry.vertices[i].z = Math.sin(t - time * 0.2) * 0.5;
     }
+    mesh.geometry.verticesNeedUpdate = true;
+
     renderer.render(scene, camera);
 }
-
 
     </script>
   </body>
