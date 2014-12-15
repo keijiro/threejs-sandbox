@@ -8,17 +8,16 @@
   </head>
   <body>
     <script src="js/three.min.js"></script>
+    <script src="js/perlin.js"></script>
     <script>
 
 var windowHalfWidth  = window.innerWidth  / 2;
 var windowHalfHeight = window.innerHeight / 2;
 
-var mouseX = 0;
-var mouseY = 0;
+var columnCount = 20;
+var rowCount = 20;
 
-var clock, renderer, scene, camera;
-
-document.addEventListener('mousemove', onDocumentMouseMove, false);
+var clock, renderer, scene, camera, nodes;
 
 init();
 animate();
@@ -32,43 +31,67 @@ function init()
     renderer.setClearColor(0xffffff);
 
     scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0xffffff, 3, 30);
+
     camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 50);
 
-    var material = new THREE.MeshBasicMaterial({color:0xf0f0f0, polygonOffset:true, polygonOffsetFactor:1.0, polygonOffsetUnits:1.0});
-    var geometry = new THREE.BoxGeometry(1, 1, 1, 1);
-    scene.add(new THREE.Mesh(geometry, material));
-
-    geometry = new THREE.Geometry();
-    geometry.vertices.push(
-        new THREE.Vector3(-1, -1, -1),
-        new THREE.Vector3(+1, -1, -1),
-        new THREE.Vector3(+1, +1, -1),
-        new THREE.Vector3(-1, +1, -1),
-        new THREE.Vector3(-1, -1, -1),
-
-        new THREE.Vector3(-1, -1, +1),
-        new THREE.Vector3(+1, -1, +1),
-        new THREE.Vector3(+1, +1, +1),
-        new THREE.Vector3(-1, +1, +1),
-        new THREE.Vector3(-1, -1, +1),
-
-        new THREE.Vector3(-1, +1, +1),
-        new THREE.Vector3(-1, +1, -1),
-
-        new THREE.Vector3(+1, +1, -1),
-        new THREE.Vector3(+1, +1, +1),
-
-        new THREE.Vector3(+1, -1, +1),
-        new THREE.Vector3(+1, -1, -1)
-    );
-
-    material = new THREE.LineBasicMaterial({color:0});
-    var line = new THREE.Line(geometry, material);
-    line.scale.set(0.5, 0.5, 0.5);
-    scene.add(line);
+    setUpInitialScene();
 
     window.addEventListener('resize', onWindowResize, false);
     document.body.appendChild(renderer.domElement);
+}
+
+function setUpInitialScene()
+{
+    var faceMaterial = new THREE.MeshBasicMaterial({color:0xfafaff, polygonOffset:true, polygonOffsetFactor:1.0, polygonOffsetUnits:1.0});
+    var faceGeometry = new THREE.BoxGeometry(1, 1, 1, 1);
+
+    var wireMaterial = new THREE.LineBasicMaterial({color:0});
+    var wireGeometry = makeWireBoxGeometry();
+
+    nodes = []
+
+    for (var row = 0; row < rowCount; row++)
+    {
+        for (var column = 0; column < columnCount; column++)
+        {
+            var node = new THREE.Object3D();
+            node.add(new THREE.Mesh(faceGeometry, faceMaterial));
+            node.add(new THREE.Line(wireGeometry, wireMaterial));
+            node.position.set(column - columnCount / 2 + 0.5, 0, row - rowCount / 2 + 0.5);
+            node.scale.set(0.7, 0.7, 0.7);
+            scene.add(node);
+            nodes.push(node);
+        }
+    }
+}
+
+function makeWireBoxGeometry()
+{
+    geometry = new THREE.Geometry();
+    geometry.vertices.push(
+        new THREE.Vector3(-0.5, -0.5, -0.5),
+        new THREE.Vector3(+0.5, -0.5, -0.5),
+        new THREE.Vector3(+0.5, +0.5, -0.5),
+        new THREE.Vector3(-0.5, +0.5, -0.5),
+        new THREE.Vector3(-0.5, -0.5, -0.5),
+
+        new THREE.Vector3(-0.5, -0.5, +0.5),
+        new THREE.Vector3(+0.5, -0.5, +0.5),
+        new THREE.Vector3(+0.5, +0.5, +0.5),
+        new THREE.Vector3(-0.5, +0.5, +0.5),
+        new THREE.Vector3(-0.5, -0.5, +0.5),
+
+        new THREE.Vector3(-0.5, +0.5, +0.5),
+        new THREE.Vector3(-0.5, +0.5, -0.5),
+
+        new THREE.Vector3(+0.5, +0.5, -0.5),
+        new THREE.Vector3(+0.5, +0.5, +0.5),
+
+        new THREE.Vector3(+0.5, -0.5, +0.5),
+        new THREE.Vector3(+0.5, -0.5, -0.5)
+    );
+    return geometry;
 }
 
 function onWindowResize()
@@ -80,12 +103,6 @@ function onWindowResize()
     camera.updateProjectionMatrix();
 
     renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-function onDocumentMouseMove(event)
-{
-    mouseX = (event.clientX / window.innerWidth ) * 2 - 1;
-    mouseY = (event.clientY / window.innerHeight) * 2 - 1;
 }
 
 function animate()
@@ -101,6 +118,13 @@ function render()
     camera.position.set(0, 0, 10 + Math.sin(time * 0.3) * 5.0);
     camera.position.applyEuler(new THREE.Euler(Math.sin(time * 0.184) * 0.2 - 0.4, time * 0.4, 0, "ZYX"));
     camera.lookAt(scene.position);
+
+    for (var i = 0; i < nodes.length; i++)
+    {
+        var node = nodes[i];
+        node.position.y = noise.simplex2(node.position.x * 0.08 + time * 0.284, node.position.z * 0.08);
+        node.rotation.z = noise.simplex2(node.position.x * 0.09 + time * 0.284, node.position.z * 0.09 + 32.43);
+    }
 
     renderer.render(scene, camera);
 }
